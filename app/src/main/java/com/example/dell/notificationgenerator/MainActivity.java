@@ -7,6 +7,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.icu.text.SimpleDateFormat;
 import android.icu.util.Calendar;
@@ -22,6 +23,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -48,7 +50,13 @@ public class MainActivity extends AppCompatActivity {
         lists=new ArrayList<String>();
         fav=new ArrayList<>();
         favTime=new ArrayList<>();
-        int i=18;
+        Date today = new Date(System.currentTimeMillis());
+        ArrayList<String> dates=new ArrayList<String>();
+         for(int i=0;i<=7;i++)
+         {
+             String s=(today.getMonth()+1)+"/"+today.getDate()+"/"+(today.getYear()+1900)+" "+today.getHours()+":"+((today.getMinutes()+16+i)%60)+":"+today.getSeconds();
+             dates.add(s);
+         }
         lists.add("Sherlocked");
         lists.add("Bug Alert");
         lists.add("Errata");
@@ -57,37 +65,37 @@ public class MainActivity extends AppCompatActivity {
         lists.add("Algorithematics");
         lists.add("Code Wars");
         lists.add("Knight Knitting");
-
-        events.add(new Event("Sherlocked",i));
-        events.add(new Event("Bug Alert",i+2));
-        events.add(new Event("Errata",i+4));
-        events.add(new Event("Ovid",i+6));
-        events.add(new Event("Khoj",i+8));
-        events.add(new Event("Algorithematics",i+10));
-        events.add(new Event("Code Wars",i+12));
-        events.add(new Event("Knight Knitting",i+14));
+        int i=0;
+        events.add(new Event("Sherlocked",dates.get(i++)));
+        events.add(new Event("Bug Alert",dates.get(i++)));
+        events.add(new Event("Errata",dates.get(i++)));
+        events.add(new Event("Ovid",dates.get(i++)));
+        events.add(new Event("Khoj",dates.get(i++)));
+        events.add(new Event("Algorithematics",dates.get(i++)));
+        events.add(new Event("Code Wars",dates.get(i++)));
+        events.add(new Event("Knight Knitting",dates.get(i++)));
         adapter =new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,lists);
         ListView listView=(ListView)findViewById(R.id.list_view);
         listView.setAdapter(adapter);
-        try {
-             database =this.openOrCreateDatabase("FavEvents",Context.MODE_PRIVATE,null);
-            database.execSQL("CREATE TABLE IF NOT EXISTS events (name VARCHAR, time INT(2))");
 
-        }catch (Exception e){}
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 //fav.add(events.get(i).getName());
                 //favTime.add(events.get(i).getMins()+"");
-                    insert(events.get(i).getName(),events.get(i).getMins());
+                if(ifExixts(events.get(i).getName(),events.get(i).getDate()))
+                {
+                    Toast.makeText(MainActivity.this,"Already Added as Fav", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    insert(events.get(i).getName(), events.get(i).getDate());
+                }
+                Intent intent=new Intent(MainActivity.this,EventActivity.class);
+                intent.putExtra("event",events.get(i).getName());
+                startActivity(intent);
 
 
-                /*SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("com.example.dell.notificationgenerator",Context.MODE_PRIVATE);
-                sharedPref.edit().putStringSet("events",new HashSet<String>(fav)).apply();
-                sharedPref.edit().putStringSet("time",new HashSet<String>(favTime)).apply();
-                Log.i("Fav Events Addition", new HashSet<String>(fav).toString());
-                Log.i("Timings Addition" , new HashSet<String>(favTime).toString());*/
 
 
 
@@ -100,12 +108,17 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-    public void insert(String name , int time)
+    public void insert(String name , String date)
     {
+        DBHelper helper=new DBHelper(getApplicationContext());
+        database=helper.getWritableDatabase();
+        helper.createTable(database);
         ContentValues values = new ContentValues();
         values.put("name", name);
-        values.put("time", time);
-        database.insert("events",null,values);
+        values.put("time", date);
+        values.put("notiId", 0);
+        database.insert("fav_events",null,values);
+        Toast.makeText(MainActivity.this,"Added as Fav", Toast.LENGTH_SHORT).show();
     }
     public void alarmService()
     {
@@ -120,23 +133,42 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    /*public void createNotification(View view)
+    public void showFav(View view)
     {
-        Intent i=new Intent(this,NotifyService.class);
-        startService(i);
+        Intent i=new Intent(this,Favourites.class);
+        startActivity(i);
+        }
 
+    public boolean ifExixts(String name , String date)
+    {
+       DBHelper helper=new DBHelper(getApplicationContext());
+        database= helper.getReadableDatabase();
+        helper.createTable(database);
+        String[] projection = {"name","time","notiId"};
+        String selection = "name" + " = ?";
+        String[] selectionArgs = { name };
+        Cursor cursor = database.query(
+                "fav_events",                     // The table to query
+                projection,                               // The columns to return
+                selection,                                // The columns for the WHERE clause
+                selectionArgs,                            // The values for the WHERE clause
+                null,                                     // don't group the rows
+                null,                                     // don't filter by row groups
+                null                                 // The sort order
+        );
 
-            /*notification.setSmallIcon(R.mipmap.ic_launcher);
-            notification.setTicker("this is a ticker");
-            notification.setWhen(System.currentTimeMillis());
-            notification.setContentTitle("Here is title");
-            notification.setContentText("Body of notification");
-            Intent i = new Intent(this, MainActivity.class);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
-            notification.setContentIntent(pendingIntent);
-            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            notificationManager.notify(100, notification.build());
-        }*/
+        if(cursor.moveToFirst())
+        {
+            cursor.close();
+            return true;
+        }
+        else
+        {
+            cursor.close();
+            return false;
+        }
+
+    }
 
 }
 

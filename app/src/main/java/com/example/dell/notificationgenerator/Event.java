@@ -7,18 +7,30 @@ package com.example.dell.notificationgenerator;
 public class Event {
 
      String name;
-    int mins;
-    public Event(String name, int mins)
+    String date;
+    int notiId;
+    public Event(String name, String date)
     {
-        this.mins=mins;
+        this.date=date;
         this.name=name;
+        this.notiId=0;
+    }
+    public Event(String name, String date , int notiId)
+    {
+        this.date=date;
+        this.name=name;
+        this.notiId=notiId;
     }
     public String  getName()
     {
         return name;
     }
-    public int getMins()
+    public String getDate()
     {
-        return mins;
+        return date;
+    }
+    public int getNotiId()
+    {
+        return notiId;
     }
 }

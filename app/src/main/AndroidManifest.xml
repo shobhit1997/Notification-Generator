@@ -29,7 +29,7 @@
             android:name=".MyReceiver"
             android:enabled="true"
             android:exported="true"
-            android:process=":remote"></receiver>
+            android:process=":remote" />
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
@@ -37,13 +37,17 @@
             android:process=":remote">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </receiver>
 
         <service
             android:name=".BootService"
-            android:exported="false"></service>
+            android:exported="false" />
+
+        <activity android:name=".Favourites" />
+        <activity android:name=".EventActivity"></activity>
     </application>
 
 </manifest>
